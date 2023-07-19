@@ -22,4 +22,34 @@ export const network = {
     }
     return result;
   },
+  addSupplier: async (data) => {
+    let result = {};
+    try {
+      const response = await instance.post(`/`, data);
+      result = response.data;
+    } catch (error) {
+      result = error;
+    }
+    return result;
+  },
+  updateSupplier: async (id, data) => {
+    let result = {};
+    try {
+      const response = await instance.put(`/${id}`, { ...data });
+      result = response.data;
+    } catch (error) {
+      result = error;
+    }
+    return result;
+  },
+  getOneSupplier: async (id) => {
+    let result = {};
+    try {
+      const response = await instance.get(`/${id}`);
+      result = response.data;
+    } catch (error) {
+      result = error;
+    }
+    return result;
+  },
 };

@@ -24,6 +24,8 @@ import Navbar from "./Navbar";
 
 function MyTable() {
   const [data, setData] = useState([]);
+  const [loggedIn, setLogged] = useState(false);
+  const [update, setUpdate] = useState({});
   const [isLoading, setLoading] = useState(false);
   const toast = useToast();
 
@@ -36,6 +38,10 @@ function MyTable() {
   };
 
   useEffect(() => loadData(), []);
+
+  const handleUpdate = (id) => {
+    network.getOneSupplier(id).then((data) => setUpdate(data));
+  };
 
   const handleDelete = (id) => {
     network.deleteSupplier(id).then(() => {
@@ -61,20 +67,32 @@ function MyTable() {
     );
   }
 
-  const table = data.map((supplier) => (
+  const table = data.reverse().map((supplier) => (
     <Tr key={supplier.id}>
       <Td>{supplier.companyName}</Td>
       <Td>{supplier.contactName}</Td>
       <Td>{supplier.contactTitle}</Td>
-      <Td>{supplier.address.city}</Td>
+      <Td>{supplier.address?.city}</Td>
       <Td>
         <Button
           colorScheme="red"
           variant="outline"
           size="md"
+          isDisabled={!loggedIn}
           onClick={() => handleDelete(supplier.id)}
         >
           Delete
+        </Button>
+      </Td>
+      <Td>
+        <Button
+          colorScheme="green"
+          variant="outline"
+          size="md"
+          isDisabled={!loggedIn}
+          onClick={() => handleUpdate(supplier.id)}
+        >
+          Update
         </Button>
       </Td>
     </Tr>
@@ -82,7 +100,13 @@ function MyTable() {
 
   return (
     <Container maxW="8xl">
-      <Navbar />
+      <Navbar
+        loadData={loadData}
+        update={update}
+        setUpdate={setUpdate}
+        loggedIn={loggedIn}
+        setLogged={setLogged}
+      />
       <Heading textAlign="center" mb="10" mt="5">
         CRUD Application
       </Heading>

@@ -8,9 +8,6 @@ import {
   Collapse,
   Icon,
   Link,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
   useColorModeValue,
   useBreakpointValue,
   useDisclosure,
@@ -23,8 +20,8 @@ import {
   ModalCloseButton,
   FormControl,
   FormLabel,
-  FormHelperText,
   Input,
+  useToast,
 } from "@chakra-ui/react";
 import {
   HamburgerIcon,
@@ -33,39 +30,116 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons";
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { network } from "../network/lib/supplier";
+import { useEffect } from "react";
 
-export default function Navbar() {
+export default function Navbar({
+  loadData,
+  update,
+  setUpdate,
+  loggedIn,
+  setLogged,
+}) {
   const { isOpen, onToggle, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+  const schema = yup
+    .object({
+      companyName: yup.string().required(),
+      contactName: yup.string().required(),
+      contactTitle: yup.string().required(),
+      address: yup.object({
+        city: yup.string().required(),
+      }),
+    })
+    .required();
 
   const {
     register,
     handleSubmit,
-    watch,
+    reset,
+    setValue,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
 
-  const onSubmit = (data) => console.log(data);
+  const clear = () => {
+    reset();
+    onClose();
+    loadData();
+    setUpdate({});
+  };
 
-  console.log(watch("companyName"));
+  const onSubmit = (data) => {
+    if (Object.keys(update).length > 0) {
+      network.updateSupplier(update.id, data).then(() => clear());
+      toast({
+        title: "Update",
+        description: `Supplier updated`,
+        status: "success",
+        duration: 2000,
+        position: "bottom-right",
+        isClosable: true,
+      });
+    } else {
+      network.addSupplier(data).then(() => {
+        clear();
+        toast({
+          title: "Add",
+          description: `Supplier added`,
+          status: "success",
+          duration: 2000,
+          position: "bottom-right",
+          isClosable: true,
+        });
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (Object.keys(update).length > 0) {
+      onOpen();
+      setValue("companyName", update.companyName);
+      setValue("contactName", update.contactName);
+      setValue("contactTitle", update.contactTitle);
+      setValue("address.city", update.address?.city);
+    }
+  }, [update]);
 
   return (
     <Box>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Post Supplier</ModalHeader>
+          <ModalHeader>
+            {Object.keys(update).length > 0 ? "Update " : "Add "}
+            Supplier
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl onSubmit={handleSubmit(onSubmit)}>
+            <FormControl>
               <FormLabel>Company Name</FormLabel>
               <Input type="text" {...register("companyName")} />
+              <Text fontSize="xs" color="red.400">
+                {errors.companyName?.message}
+              </Text>
               <FormLabel>Contact Name</FormLabel>
               <Input type="text" {...register("contactName")} />
+              <Text fontSize="xs" color="red.400">
+                {errors.contactName?.message}
+              </Text>
               <FormLabel>Contact Title</FormLabel>
               <Input type="text" {...register("contactTitle")} />
+              <Text fontSize="xs" color="red.400">
+                {errors.contactTitle?.message}
+              </Text>
               <FormLabel>Address City</FormLabel>
               <Input type="text" {...register("address.city")} />
-              <Button type="submit">send</Button>
+              <Text fontSize="xs" color="red.400">
+                {errors.address?.city?.message}
+              </Text>
             </FormControl>
           </ModalBody>
 
@@ -73,7 +147,9 @@ export default function Navbar() {
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               Close
             </Button>
-            <Button variant="ghost">Add</Button>
+            <Button variant="ghost" onClick={handleSubmit(onSubmit)}>
+              {Object.keys(update).length > 0 ? "Update" : "Add"}
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -122,17 +198,20 @@ export default function Navbar() {
           direction={"row"}
           spacing={6}
         >
-          <Button onClick={onOpen}>Add Supplier</Button>
+          <Button onClick={onOpen} isDisabled={!loggedIn}>
+            Add Supplier
+          </Button>
           <Button
             as={"a"}
             fontSize={"sm"}
             fontWeight={400}
             variant={"link"}
             href={"#"}
+            onClick={() => setLogged((prev) => !prev)}
           >
-            Sign In
+            {loggedIn ? "Log out" : " Log In"}
           </Button>
-          <Button
+          {/* <Button
             as={"a"}
             display={{ base: "none", md: "inline-flex" }}
             fontSize={"sm"}
@@ -145,7 +224,7 @@ export default function Navbar() {
             }}
           >
             Sign Up
-          </Button>
+          </Button> */}
         </Stack>
       </Flex>
 
@@ -156,91 +235,7 @@ export default function Navbar() {
   );
 }
 
-const DesktopNav = () => {
-  const linkColor = useColorModeValue("gray.600", "gray.200");
-  const linkHoverColor = useColorModeValue("gray.800", "white");
-  const popoverContentBgColor = useColorModeValue("white", "gray.800");
-
-  return (
-    <Stack direction={"row"} spacing={4}>
-      {NAV_ITEMS.map((navItem) => (
-        <Box key={navItem.label}>
-          <Popover trigger={"hover"} placement={"bottom-start"}>
-            <PopoverTrigger>
-              <Link
-                p={2}
-                href={navItem.href ?? "#"}
-                fontSize={"sm"}
-                fontWeight={500}
-                color={linkColor}
-                _hover={{
-                  textDecoration: "none",
-                  color: linkHoverColor,
-                }}
-              >
-                {navItem.label}
-              </Link>
-            </PopoverTrigger>
-
-            {navItem.children && (
-              <PopoverContent
-                border={0}
-                boxShadow={"xl"}
-                bg={popoverContentBgColor}
-                p={4}
-                rounded={"xl"}
-                minW={"sm"}
-              >
-                <Stack>
-                  {navItem.children.map((child) => (
-                    <DesktopSubNav key={child.label} {...child} />
-                  ))}
-                </Stack>
-              </PopoverContent>
-            )}
-          </Popover>
-        </Box>
-      ))}
-    </Stack>
-  );
-};
-
-const DesktopSubNav = ({ label, href, subLabel }) => {
-  return (
-    <Link
-      href={href}
-      role={"group"}
-      display={"block"}
-      p={2}
-      rounded={"md"}
-      _hover={{ bg: useColorModeValue("pink.50", "gray.900") }}
-    >
-      <Stack direction={"row"} align={"center"}>
-        <Box>
-          <Text
-            transition={"all .3s ease"}
-            _groupHover={{ color: "pink.400" }}
-            fontWeight={500}
-          >
-            {label}
-          </Text>
-          <Text fontSize={"sm"}>{subLabel}</Text>
-        </Box>
-        <Flex
-          transition={"all .3s ease"}
-          transform={"translateX(-10px)"}
-          opacity={0}
-          _groupHover={{ opacity: "100%", transform: "translateX(0)" }}
-          justify={"flex-end"}
-          align={"center"}
-          flex={1}
-        >
-          <Icon color={"pink.400"} w={5} h={5} as={ChevronRightIcon} />
-        </Flex>
-      </Stack>
-    </Link>
-  );
-};
+const DesktopNav = () => {};
 
 const MobileNav = () => {
   return (

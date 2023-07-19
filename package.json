@@ -2,12 +2,15 @@
   "name": "crud-react",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://gitname.github.io/crud-react",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "pnpm run build",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.0.19",
@@ -17,6 +20,7 @@
     "@hookform/resolvers": "^3.1.1",
     "axios": "^1.4.0",
     "framer-motion": "^10.12.21",
+    "gh-pages": "^5.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.1",
